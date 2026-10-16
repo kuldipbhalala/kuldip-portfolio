@@ -314,6 +314,12 @@ img {
   border-color: #ff6b6b;
 }
 
+.form input::placeholder,
+.form textarea::placeholder {
+  color: #6b6b6b;
+  opacity: 1;
+}
+
 @media (max-width: 520px) {
   .hero {
     gap: 34px;

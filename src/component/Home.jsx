@@ -355,6 +355,11 @@ function ContactForm() {
     const { name } = e.target;
     let { value } = e.target;
 
+    // Name: only letters, spaces, dot, apostrophe, hyphen (no numbers)
+    if (name === "name") {
+      value = value.replace(/[^\p{L}\s.'-]/gu, "").replace(/\s{2,}/g, " ");
+    }
+
     // WhatsApp: only digits, max 10 (removes +91 / 91 if pasted)
     if (name === "whatsapp") {
       let digits = value.replace(/\D/g, "");
@@ -380,6 +385,8 @@ function ContactForm() {
 
     if (!name) err.name = "Please enter your name.";
     else if (name.length < 2) err.name = "Name must be at least 2 characters.";
+    else if (!/^[\p{L}][\p{L}\s.'-]*$/u.test(name))
+      err.name = "Name can only contain letters.";
 
     if (!brand) err.brand = "Please enter your brand or company name.";
     else if (brand.length < 2)
@@ -468,6 +475,7 @@ function ContactForm() {
             value={form.name}
             onChange={update}
             className={errors.name ? "input-error" : ""}
+            placeholder="e.g. Rahul Sharma"
             autoComplete="name"
           />
           {errors.name && <span className="field-error">{errors.name}</span>}
@@ -480,6 +488,7 @@ function ContactForm() {
             value={form.brand}
             onChange={update}
             className={errors.brand ? "input-error" : ""}
+            placeholder="e.g. Sharma Fashion Store"
             autoComplete="organization"
           />
           {errors.brand && <span className="field-error">{errors.brand}</span>}
@@ -495,6 +504,7 @@ function ContactForm() {
             value={form.email}
             onChange={update}
             className={errors.email ? "input-error" : ""}
+            placeholder="e.g. rahul@gmail.com"
             autoComplete="email"
           />
           {errors.email && <span className="field-error">{errors.email}</span>}
@@ -510,7 +520,7 @@ function ContactForm() {
             className={errors.whatsapp ? "input-error" : ""}
             inputMode="numeric"
             maxLength={10}
-            placeholder="10-digit mobile number"
+            placeholder="e.g. 9876543210"
             autoComplete="tel-national"
           />
           {errors.whatsapp && (
@@ -548,6 +558,7 @@ function ContactForm() {
         <textarea
           name="message"
           rows="4"
+          placeholder="e.g. Low leads, high cost per lead, or ads not giving sales..."
           value={form.message}
           onChange={update}
         />
