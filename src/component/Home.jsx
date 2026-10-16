@@ -347,51 +347,100 @@ function ContactForm() {
     message: "",
   });
 
+  const [errors, setErrors] = useState({});
   const [status, setStatus] = useState("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
   const update = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    const { name } = e.target;
+    let { value } = e.target;
+
+    // WhatsApp: only digits, max 10 (removes +91 / 91 if pasted)
+    if (name === "whatsapp") {
+      let digits = value.replace(/\D/g, "");
+      if (digits.length > 10 && digits.startsWith("91")) {
+        digits = digits.slice(2);
+      }
+      value = digits.slice(0, 10);
+    }
+
+    setForm({ ...form, [name]: value });
+
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: "" });
+    }
+  };
+
+  const validate = () => {
+    const err = {};
+    const name = form.name.trim();
+    const brand = form.brand.trim();
+    const email = form.email.trim();
+    const whatsapp = form.whatsapp.trim();
+
+    if (!name) err.name = "Please enter your name.";
+    else if (name.length < 2) err.name = "Name must be at least 2 characters.";
+
+    if (!brand) err.brand = "Please enter your brand or company name.";
+    else if (brand.length < 2)
+      err.brand = "Brand name must be at least 2 characters.";
+
+    if (!email) err.email = "Please enter your email address.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email))
+      err.email = "Please enter a valid email address.";
+
+    if (!whatsapp) err.whatsapp = "Please enter your WhatsApp number.";
+    else if (!/^\d{10}$/.test(whatsapp))
+      err.whatsapp = "WhatsApp number must be exactly 10 digits.";
+    else if (!/^[6-9]/.test(whatsapp))
+      err.whatsapp = "Enter a valid Indian mobile number (starts with 6-9).";
+
+    setErrors(err);
+    return Object.keys(err).length === 0;
   };
 
   const submit = async (e) => {
     e.preventDefault();
     if (status === "sending") return;
+    if (!validate()) return;
+
     setStatus("sending");
     setErrorMessage("");
 
     try {
-      const response = await fetch("https://formsubmit.co/ajax/adgrowza@gmail.com", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          brand: form.brand.trim(),
-          email: form.email.trim(),
-          _replyto: form.email.trim(),
-          whatsapp: form.whatsapp.trim(),
-          "Monthly Ad Spend": form.spend || "Not specified",
-          "Advertising Platform": form.platform || "Not specified",
-          message: form.message.trim() || "Not specified",
-          _subject: "New Free Audit Enquiry — Kuldip Portfolio",
-          _template: "table",
-          _captcha: "false",
-          _url: window.location.href,
-        }),
-      });
+      const response = await fetch(
+        "https://formsubmit.co/ajax/adgrowza@gmail.com",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            name: form.name.trim(),
+            brand: form.brand.trim(),
+            email: form.email.trim(),
+            _replyto: form.email.trim(),
+            whatsapp: form.whatsapp.trim(),
+            "Monthly Ad Spend": form.spend || "Not specified",
+            "Advertising Platform": form.platform || "Not specified",
+            message: form.message.trim() || "Not specified",
+            _subject: "New Free Audit Enquiry — Kuldip Portfolio",
+            _template: "table",
+            _captcha: "false",
+            _url: window.location.href,
+          }),
+        }
+      );
       const data = await response.json();
       if (!response.ok || ![true, "true"].includes(data.success)) {
         throw new Error(data.message || "Unable to submit. Please try again.");
       }
       setStatus("done");
     } catch (error) {
-      setErrorMessage(error.message || "Please check your connection and try again.");
+      setErrorMessage(
+        error.message || "Please check your connection and try again."
+      );
       setStatus("error");
     }
   };
@@ -410,7 +459,7 @@ function ContactForm() {
   }
 
   return (
-    <form className="form" onSubmit={submit}>
+    <form className="form" onSubmit={submit} noValidate>
       <div className="row">
         <label>
           Your Name *
@@ -418,8 +467,10 @@ function ContactForm() {
             name="name"
             value={form.name}
             onChange={update}
-            required
+            className={errors.name ? "input-error" : ""}
+            autoComplete="name"
           />
+          {errors.name && <span className="field-error">{errors.name}</span>}
         </label>
 
         <label>
@@ -428,8 +479,10 @@ function ContactForm() {
             name="brand"
             value={form.brand}
             onChange={update}
-            required
+            className={errors.brand ? "input-error" : ""}
+            autoComplete="organization"
           />
+          {errors.brand && <span className="field-error">{errors.brand}</span>}
         </label>
       </div>
 
@@ -441,8 +494,10 @@ function ContactForm() {
             name="email"
             value={form.email}
             onChange={update}
-            required
+            className={errors.email ? "input-error" : ""}
+            autoComplete="email"
           />
+          {errors.email && <span className="field-error">{errors.email}</span>}
         </label>
 
         <label>
@@ -452,19 +507,22 @@ function ContactForm() {
             name="whatsapp"
             value={form.whatsapp}
             onChange={update}
-            required
+            className={errors.whatsapp ? "input-error" : ""}
+            inputMode="numeric"
+            maxLength={10}
+            placeholder="10-digit mobile number"
+            autoComplete="tel-national"
           />
+          {errors.whatsapp && (
+            <span className="field-error">{errors.whatsapp}</span>
+          )}
         </label>
       </div>
 
       <div className="row">
         <label>
           Monthly Ad Spend
-          <select
-            name="spend"
-            value={form.spend}
-            onChange={update}
-          >
+          <select name="spend" value={form.spend} onChange={update}>
             <option value="">Select range</option>
 
             {SPEND.map((item) => (
@@ -475,11 +533,7 @@ function ContactForm() {
 
         <label>
           Platform Currently Running
-          <select
-            name="platform"
-            value={form.platform}
-            onChange={update}
-          >
+          <select name="platform" value={form.platform} onChange={update}>
             <option value="">Select platform</option>
 
             {PLATFORMS.map((item) => (
@@ -504,9 +558,7 @@ function ContactForm() {
         type="submit"
         disabled={status === "sending"}
       >
-        {status === "sending"
-          ? "Sending..."
-          : "Book My Free Audit →"}
+        {status === "sending" ? "Sending..." : "Book My Free Audit →"}
       </button>
 
       {status === "error" && (
