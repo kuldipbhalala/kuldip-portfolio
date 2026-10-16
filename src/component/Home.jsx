@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import "./Home.css";
 
 const NAV = [
@@ -88,7 +88,7 @@ const CASES = [
       "Built repeatable lead-generation systems around performance data.",
     ],
 
-    screenshot: "result.png",
+    screenshot: "/result.png",
     screenshotLabel: "META ADS CAMPAIGN PERFORMANCE — ADS MANAGER",
   },
 
@@ -581,7 +581,155 @@ function ContactForm() {
   );
 }
 
+function ImageViewer({ src, alt, onClose }) {
+  const MIN_ZOOM = 1;
+  const MAX_ZOOM = 6;
+
+  const stageRef = useRef(null);
+  const pinchRef = useRef(null);
+  const centerRef = useRef(null);
+  const [zoom, setZoom] = useState(1);
+
+  const clamp = (value) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
+
+  // zoom while keeping the middle of the screen in place
+  const applyZoom = (next) => {
+    const stage = stageRef.current;
+    const value = clamp(next);
+
+    if (stage) {
+      centerRef.current = {
+        x: (stage.scrollLeft + stage.clientWidth / 2) / stage.scrollWidth,
+        y: (stage.scrollTop + stage.clientHeight / 2) / stage.scrollHeight,
+      };
+    }
+
+    setZoom(value);
+  };
+
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    const center = centerRef.current;
+    if (!stage || !center) return;
+
+    stage.scrollLeft = center.x * stage.scrollWidth - stage.clientWidth / 2;
+    stage.scrollTop = center.y * stage.scrollHeight - stage.clientHeight / 2;
+    centerRef.current = null;
+  }, [zoom]);
+
+  // close on Esc + lock page scroll behind the viewer
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+
+    window.addEventListener("keydown", onKey);
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [onClose]);
+
+  const distance = (touches) =>
+    Math.hypot(
+      touches[0].clientX - touches[1].clientX,
+      touches[0].clientY - touches[1].clientY
+    );
+
+  const onTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      pinchRef.current = { start: distance(e.touches), zoom };
+    }
+  };
+
+  const onTouchMove = (e) => {
+    if (e.touches.length === 2 && pinchRef.current) {
+      const ratio = distance(e.touches) / pinchRef.current.start;
+      applyZoom(pinchRef.current.zoom * ratio);
+    }
+  };
+
+  const onTouchEnd = (e) => {
+    if (e.touches.length < 2) pinchRef.current = null;
+  };
+
+  return (
+    <div className="viewer" role="dialog" aria-modal="true" aria-label={alt}>
+      <div className="viewer-bar">
+        <span className="viewer-title">
+          Pinch, double tap or use + / − to zoom
+        </span>
+
+        <div className="viewer-controls">
+          <button
+            type="button"
+            className="viewer-btn"
+            onClick={() => applyZoom(zoom - 0.5)}
+            disabled={zoom <= MIN_ZOOM}
+            aria-label="Zoom out"
+          >
+            −
+          </button>
+
+          <span className="viewer-zoom-label">{Math.round(zoom * 100)}%</span>
+
+          <button
+            type="button"
+            className="viewer-btn"
+            onClick={() => applyZoom(zoom + 0.5)}
+            disabled={zoom >= MAX_ZOOM}
+            aria-label="Zoom in"
+          >
+            +
+          </button>
+
+          <button
+            type="button"
+            className="viewer-btn viewer-reset"
+            onClick={() => applyZoom(1)}
+          >
+            Reset
+          </button>
+
+          <button
+            type="button"
+            className="viewer-btn viewer-close"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <div
+        className="viewer-stage"
+        ref={stageRef}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchEnd}
+      >
+        <img
+          className="viewer-img"
+          src={src}
+          alt={alt}
+          draggable="false"
+          style={{ width: `${zoom * 100}%` }}
+          onDoubleClick={() => applyZoom(zoom > 1 ? 1 : 2.5)}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
+  const [viewer, setViewer] = useState(null);
+
   return (
     <div className="page" id="top">
 
@@ -996,14 +1144,26 @@ export default function Home() {
                   </div>
 
 
-                  <div className="case-proof-image">
+                  <button
+                    type="button"
+                    className="case-proof-image"
+                    onClick={() =>
+                      setViewer({
+                        src: item.screenshot,
+                        alt: `Case Study ${item.number} Meta Ads Manager`,
+                      })
+                    }
+                    aria-label={`Open Case Study ${item.number} screenshot in full screen`}
+                  >
 
                     <img
                       src={item.screenshot}
                       alt={`Case Study ${item.number} Meta Ads Manager`}
                     />
 
-                  </div>
+                    <span className="zoom-hint">Tap to view full</span>
+
+                  </button>
 
                 </div>
 
@@ -1140,6 +1300,14 @@ export default function Home() {
         </div>
 
       </footer>
+
+      {viewer && (
+        <ImageViewer
+          src={viewer.src}
+          alt={viewer.alt}
+          onClose={() => setViewer(null)}
+        />
+      )}
 
     </div>
   );
