@@ -13,7 +13,7 @@ const STATS = [
   ["₹1L+", "Ad Spend Managed"],
   ["6,700+", "Leads Generated"],
   ["1,400+", "Messaging Conversations"],
-  ["3+ Years", "Performance Marketing Experience"],
+  ["1+ Years", "Performance Marketing Experience"],
 ];
 
 const SKILLS = [
@@ -348,6 +348,7 @@ function ContactForm() {
   });
 
   const [status, setStatus] = useState("idle");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const update = (e) => {
     setForm({
@@ -358,14 +359,39 @@ function ContactForm() {
 
   const submit = async (e) => {
     e.preventDefault();
-
+    if (status === "sending") return;
     setStatus("sending");
+    setErrorMessage("");
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
+      const response = await fetch("https://formsubmit.co/ajax/adgrowza@gmail.com", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          brand: form.brand.trim(),
+          email: form.email.trim(),
+          _replyto: form.email.trim(),
+          whatsapp: form.whatsapp.trim(),
+          "Monthly Ad Spend": form.spend || "Not specified",
+          "Advertising Platform": form.platform || "Not specified",
+          message: form.message.trim() || "Not specified",
+          _subject: "New Free Audit Enquiry — Kuldip Portfolio",
+          _template: "table",
+          _captcha: "false",
+          _url: window.location.href,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || ![true, "true"].includes(data.success)) {
+        throw new Error(data.message || "Unable to submit. Please try again.");
+      }
       setStatus("done");
-    } catch {
+    } catch (error) {
+      setErrorMessage(error.message || "Please check your connection and try again.");
       setStatus("error");
     }
   };
@@ -376,7 +402,7 @@ function ContactForm() {
         <h3>Thank you.</h3>
 
         <p>
-          Your enquiry has been received. I'll get back to you as soon as
+          Your enquiry has been submitted. I'll get back to you as soon as
           possible.
         </p>
       </div>
@@ -484,8 +510,8 @@ function ContactForm() {
       </button>
 
       {status === "error" && (
-        <p className="form-error">
-          Something went wrong. Please contact me directly.
+        <p className="form-error" role="alert">
+          {errorMessage}
         </p>
       )}
     </form>
@@ -540,7 +566,7 @@ export default function Home() {
           </h1>
 
           <p className="hero-sub">
-            3+ years of hands-on experience building and scaling
+            1+ years of hands-on experience building and scaling
             performance campaigns through Meta Ads. Every result shown
             here is backed by real ad account performance.
           </p>
@@ -623,7 +649,7 @@ export default function Home() {
 
             <p>
               I'm <strong>Kuldip Bhalala</strong> — a performance
-              marketing specialist with 3+ years of hands-on experience
+              marketing specialist with 1+ years of hands-on experience
               running and scaling paid advertising campaigns.
             </p>
 
@@ -698,7 +724,7 @@ export default function Home() {
 
           <div className="about-stat">
             <div className="about-stat-value">
-              3+ Yrs
+              1+ Yrs
             </div>
 
             <p className="about-stat-label">
@@ -996,8 +1022,8 @@ export default function Home() {
 
             <div className="contact-links">
 
-              <a href="mailto:your@email.com">
-                your@email.com
+              <a href="mailto:adgrowza@gmail.com">
+                adgrowza@gmail.com
               </a>
 
               <a
