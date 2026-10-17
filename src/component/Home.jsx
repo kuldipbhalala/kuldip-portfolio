@@ -859,7 +859,7 @@ export default function Home() {
           <div className="about-copy">
 
             <p>
-              I'm <strong>Kuldip Bhalala</strong> — a performance
+              I'm <strong>Kuldip Bhalala</strong> a performance
               marketing specialist with 1+ years of hands-on experience
               running and scaling paid advertising campaigns.
             </p>
@@ -872,10 +872,10 @@ export default function Home() {
             </p>
 
             <p>
-              My approach is simple — understand the audience, test the
+              My approach is simple understand the audience, test the
               right creatives, analyse performance and scale what
               actually works. I focus on{" "}
-              <strong>real business results</strong>, not vanity metrics.
+              <strong>Real business results</strong>, not vanity metrics.
             </p>
 
           </div>
