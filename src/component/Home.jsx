@@ -415,30 +415,27 @@ function ContactForm() {
     setErrorMessage("");
 
     try {
-      const response = await fetch(
-        "https://formsubmit.co/ajax/adgrowza@gmail.com",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify({
-            name: form.name.trim(),
-            brand: form.brand.trim(),
-            email: form.email.trim(),
-            _replyto: form.email.trim(),
-            whatsapp: form.whatsapp.trim(),
-            "Monthly Ad Spend": form.spend || "Not specified",
-            "Advertising Platform": form.platform || "Not specified",
-            message: form.message.trim() || "Not specified",
-            _subject: "New Free Audit Enquiry — Kuldip Portfolio",
-            _template: "table",
-            _captcha: "false",
-            _url: window.location.href,
-          }),
-        }
-      );
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          access_key: import.meta.env.VITE_WEB3FORMS_KEY,
+          subject: "New Free Audit Enquiry — Kuldip Portfolio",
+          from_name: "Kuldip Portfolio",
+          name: form.name.trim(),
+          brand: form.brand.trim(),
+          email: form.email.trim(),
+          replyto: form.email.trim(),
+          whatsapp: form.whatsapp.trim(),
+          "Monthly Ad Spend": form.spend || "Not specified",
+          "Advertising Platform": form.platform || "Not specified",
+          message: form.message.trim() || "Not specified",
+          page_url: window.location.href,
+        }),
+      });
       const data = await response.json();
       if (!response.ok || ![true, "true"].includes(data.success)) {
         throw new Error(data.message || "Unable to submit. Please try again.");
